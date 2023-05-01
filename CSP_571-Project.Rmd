@@ -1,0 +1,657 @@
+---
+title: "CSP_571-Project"
+output: html_document
+date: "2023-04-29"
+---
+# Reading the data 
+
+```{r}
+creditcard_data <- read.csv("creditcard.csv")
+```
+
+######################### Data Exploration #################
+
+# Data
+
+```{r}
+head(creditcard_data)
+tail(creditcard_data)
+```
+
+# Datatypes of the data
+
+```{r}
+str(creditcard_data)
+```
+
+# Dimension of the data 
+
+```{r}
+dim(creditcard_data)
+```
+
+# Summary of the data 
+
+```{r}
+summary(creditcard_data)
+```
+
+# Plotting- Distribution of the data 
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+creditcard_data %>%
+  select(c("Time","V1","V2","V3","V4","V5","V6","V7","V8","V9","V10",
+           "V11","V12","V13","V14","V15","V16","V17","V18","V19","V20", 
+           "V21", "V22","V23","V24","V25","V26","V27","V28", "Amount")) %>%
+  gather() %>%
+  ggplot(aes(x = value, fill = "red")) +
+  geom_histogram(color = "black", fill = "red") +
+  facet_wrap(~key, scales = "free")
+```
+
+# Plotting Target values i.e. the number of 1's and 0's
+
+# Create a summary table of the Class variable
+```{r}
+class_summary <- table(creditcard_data$Class)
+```
+
+# Convert the summary table to a data frame
+```{r}
+class_df <- data.frame(Class = names(class_summary), Count = as.numeric(class_summary))
+```
+
+# Create a bar chart of the Class variable
+```{r}
+ggplot(class_df, aes(x = Class, y = Count, fill = Class)) + 
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Count), vjust = -0.5, size = 4) +
+  labs(title = "Distribution of Classes", x = "Class", y = "Count") +
+  scale_fill_manual(values = c("blue", "red")) # set colors for 0 and 1 respectively
+
+```
+
+######################### Data Preparation #######################
+
+
+# Checking for missing data 
+
+```{r}
+sum(is.na(creditcard_data))
+```
+
+
+# Checking for outliers using boxplots
+
+# Load required libraries
+```{r}
+library(reshape2)
+```
+
+
+# Subset the creditcard_data
+```{r}
+sub_data <- creditcard_data %>% select(V1,V2,V3,V4,V5,V6,V7,V8,V9,V10)
+sub_data1 <- creditcard_data %>% select(V11,V12,V13,V14,V15,V16,V17,V18,V19,V20)
+sub_data2 <- creditcard_data %>% select(V21,V22,V23,V24,V25,V26,V27,V28)
+```
+
+# Create a boxplot of the sub_data
+```{r}
+ggplot(melt(sub_data), aes(x = variable, y = value, fill = variable)) + 
+  geom_boxplot() +
+  labs(title = "Distribution of V1 to V10", x = "Variable", y = "Value") +
+  scale_fill_discrete(name="Variable") # Set color for the boxplots
+```
+
+# Create a boxplot of the sub_data1
+```{r}
+ggplot(melt(sub_data1), aes(x = variable, y = value, fill = variable)) + 
+  geom_boxplot() +
+  labs(title = "Distribution of V11 to V20", x = "Variable", y = "Value") +
+  scale_fill_discrete(name="Variable") # Set color for the boxplots
+
+```
+
+# Create a boxplot of the sub_data2
+```{r}
+ggplot(melt(sub_data2), aes(x = variable, y = value, fill = variable)) + 
+  geom_boxplot() +
+  labs(title = "Distribution of V21 to V28", x = "Variable", y = "Value") +
+  scale_fill_discrete(name="Variable") # Set color for the boxplots
+```
+
+# Eliminating outliers
+```{r}
+outlier_list <- c("V1","V2","V3","V4","V5","V6","V7","V8","V9","V10",
+                  "V11","V12","V13","V14","V15","V16","V17","V18","V19","V20", 
+                  "V21", "V22","V23","V24","V25","V26","V27","V28")
+
+for (column in seq_along(outlier_list)){
+  
+  col <- outlier_list[column]
+  lower_quartile <- quantile(creditcard_data[[col]], probs = 0.25)[[1]]
+  upper_quartile <- quantile(creditcard_data[[col]], probs = 0.75)[[1]]
+  iqr <- upper_quartile - lower_quartile
+  iqr_extended <- iqr * 2 # Just want to cut more values so 2
+  min_border <- lower_quartile - iqr_extended
+  max_border <- upper_quartile + iqr_extended
+  
+  #print(min_border)
+  #print(max_border)
+  #filtered_data <- creditcard_data[(creditcard_data$col < min_border) | (creditcard_data$col > max_border), ]
+  indices <- which((creditcard_data[[col]] < min_border) | (creditcard_data[[col]] > max_border))
+  #print(indices)
+  cat(paste(length(indices), "outliers detected in column", column, "\n"))
+  creditcard_data <- creditcard_data[-indices, ]
+}
+```
+
+
+# Plotting the data again
+
+# Subset the creditcard_data
+```{r}
+sub_data_outrm1 <- creditcard_data %>% select(V1,V2,V3,V4,V5,V6,V7,V8,V9,V10)
+sub_data1_outrm2 <- creditcard_data %>% select(V11,V12,V13,V14,V15,V16,V17,V18,V19,V20)
+sub_data2_outrm3 <- creditcard_data %>% select(V21,V22,V23,V24,V25,V26,V27,V28)
+
+```
+
+# Create a boxplot of the sub_data
+```{r}
+ggplot(melt(sub_data_outrm1), aes(x = variable, y = value, fill = variable)) + 
+  geom_boxplot() +
+  labs(title = "Distribution of V1 to V10", x = "Variable", y = "Value") +
+  scale_fill_discrete(name="Variable") # Set color for the boxplots
+```
+
+
+# Create a boxplot of the sub_data1
+```{r}
+ggplot(melt(sub_data1_outrm2), aes(x = variable, y = value, fill = variable)) + 
+  geom_boxplot() +
+  labs(title = "Distribution of V11 to V20", x = "Variable", y = "Value") +
+  scale_fill_discrete(name="Variable") # Set color for the boxplots
+
+```
+
+# Create a boxplot of the sub_data2
+```{r}
+ggplot(melt(sub_data2_outrm3), aes(x = variable, y = value, fill = variable)) + 
+  geom_boxplot() +
+  labs(title = "Distribution of V21 to V28", x = "Variable", y = "Value") +
+  scale_fill_discrete(name="Variable") # Set color for the boxplots
+```
+
+
+# Dropping unnecessary Time column
+```{r}
+creditcard_data <- creditcard_data %>% select(-Time)
+head(creditcard_data)
+```
+
+
+# Find class balance
+```{r}
+table(creditcard_data$Class)
+```
+
+# Create a summary table of the Class variable
+```{r}
+class_summary1 <- table(creditcard_data$Class)
+```
+
+# Convert the summary table to a data frame
+```{r}
+class_df1 <- data.frame(Class = names(class_summary1), Count = as.numeric(class_summary1))
+```
+
+# Create a bar chart of the Class variable
+```{r}
+ggplot(class_df1, aes(x = Class, y = Count, fill = Class)) + 
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Count), vjust = -0.5, size = 4) +
+  labs(title = "Distribution of Classes", x = "Class", y = "Count") +
+  scale_fill_manual(values = c("blue", "red")) # set colors for 0 and 1 respectively
+```
+
+
+# There are only 23 fraud values, I will use SMOTE to add more samples
+
+# Convert the column class to factor
+
+```{r}
+creditcard_data$Class <- as.factor(creditcard_data$Class)
+```
+
+# Adding new data
+```{r}
+library(DMwR)
+creditcard_data_SMOTE <- SMOTE(Class ~ ., creditcard_data, perc.over = 200000, perc.under = 110)
+
+table(creditcard_data_SMOTE$Class)
+```
+
+# Plotting the class
+```{r}
+class_summary2 <- table(creditcard_data_SMOTE$Class)
+```
+
+# Convert the summary table to a data frame
+```{r}
+class_df2 <- data.frame(Class = names(class_summary2), Count = as.numeric(class_summary2))
+```
+
+# Create a bar chart of the Class variable
+```{r}
+ggplot(class_df2, aes(x = Class, y = Count, fill = Class)) + 
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Count), vjust = -0.5, size = 4) +
+  labs(title = "Distribution of Classes", x = "Class", y = "Count") +
+  scale_fill_manual(values = c("blue", "red")) # set colors for 0 and 1 respectively
+```
+
+############################## Saving the preprocessed data #####################################
+
+# save the data frame as a pickle file
+```{r}
+saveRDS(creditcard_data_SMOTE, file = "data1.pickle")
+```
+
+# load the data frame from the pickle file
+```{r}
+creditcard_data <- readRDS(file = "data1.pickle")
+```
+
+# Split Input variables and output variables 
+
+```{r}
+X <- creditcard_data[, -30]
+y <- creditcard_data[, 30]
+
+head(X)
+head(y)
+```
+
+# Normalizing the data 
+
+```{r}
+library(caret)
+```
+
+# Assuming your data frame is named "X"
+```{r}
+preproc <- preProcess(X, method = "range")
+X <- predict(preproc, X)
+
+head(X)
+```
+
+# Split out training and test sets
+```{r}
+set.seed(42) # set the seed for reproducibility
+indices <- 1:nrow(creditcard_data)
+```
+
+# create a vector of indices for splitting the data
+```{r}
+train_idx <- createDataPartition(y, times = 1, p = 0.8, list = FALSE)
+```
+
+# split the data into training and testing sets
+```{r}
+X_train <- X[train_idx, ]
+X_test <- X[-train_idx, ]
+y_train <- y[train_idx]
+y_test <- y[-train_idx]
+```
+
+# Feature selection using Recursive feature elimination 
+
+```{r}
+set.seed(10)
+
+ctrl <- rfeControl(functions = lrFuncs,
+                   method = "repeatedcv",
+                   repeats = 20,
+                   verbose = TRUE)
+
+result_rfe <- rfe(X_train[,1:29], y_train,
+                 sizes = c(1:29),
+                 rfeControl = ctrl)
+
+result_rfe
+```
+
+
+# The rfe result recommends 27 features out of 29
+
+# save the data frame as a pickle file
+```{r}
+saveRDS(result_rfe, file = "result_rfe.pickle")
+```
+
+# load the data frame from the pickle file
+```{r}
+result_rfe <- readRDS(file = "result_rfe.pickle")
+result_rfe
+```
+
+# Print the selected features
+```{r}
+predictors(result_rfe)
+```
+
+# Print the results visually
+```{r}
+ggplot(data = result_rfe, metric = "Accuracy") + theme_bw()
+ggplot(data = result_rfe, metric = "Kappa") + theme_bw()
+
+varimp_data <- data.frame(feature = row.names(varImp(result_rfe))[1:27],
+                          importance = varImp(result_rfe)[1:27, 1])
+
+ggplot(data = varimp_data, 
+       aes(x = reorder(feature, -importance), y = importance, fill = feature)) +
+  geom_bar(stat="identity") + labs(x = "Features", y = "Variable Importance") + 
+  geom_text(aes(label = round(importance, 2)), vjust=1.6, color="white", size=4) + 
+  theme_bw() + theme(legend.position = "none")
+```
+
+
+# Therefore, we will use the above suggested 27 columns for our predictions
+
+```{r}
+head(X_train)
+head(X_test)
+head(y_train)
+head(y_test)
+```
+
+# Preparing the data for X_train
+```{r}
+X_train_rfe <- X_train %>% select(V6,V23,V8,V13,V21,V22,V20,V15,V24,V2,
+                                          V7,V1,V9,V10,V3,V5,V18,V4,V17,V16,V11,V12,V27,
+                                          V14,V19,V28,V25)
+
+X_test_rfe <- X_test %>% select(V6,V23,V8,V13,V21,V22,V20,V15,V24,V2,
+                                  V7,V1,V9,V10,V3,V5,V18,V4,V17,V16,V11,V12,V27,
+                                  V14,V19,V28,V25)
+
+head(X_train_rfe)
+
+```
+
+
+######################## Logistic Regression Model ###################
+
+# Fit a logistic regression model
+```{r}
+lr_model <- glm(y_train ~ ., 
+                data = cbind(X_train_rfe, y_train), 
+                family = binomial)
+```
+
+# Summarize the model
+```{r}
+summary(lr_model)
+
+y_pred <- predict(lr_model, 
+                  newdata = X_test, 
+                  type = "response")
+
+y_pred_class <- ifelse(y_pred > 0.5, 1, 0)
+
+```
+
+# Confusion matrix
+```{r}
+conf_matrix <- table(y_test, y_pred_class)
+conf_matrix
+```
+
+# Accuracy
+```{r}
+accuracy <- sum(diag(conf_matrix))/sum(conf_matrix)
+accuracy
+```
+
+# Precision
+```{r}
+precision <- conf_matrix[2, 2]/sum(conf_matrix[, 2])
+precision
+```
+
+# Recall
+```{r}
+recall <- conf_matrix[2, 2]/sum(conf_matrix[2, ])
+recall
+```
+
+# F1 score
+```{r}
+f1_score <- 2 * precision * recall/(precision + recall)
+f1_score
+```
+
+
+
+######################## Decision Tree ###################
+
+```{r}
+library(rpart) 
+library(rpart.plot)
+```
+
+# Fit a decision tree  model
+```{r}
+dt_model <- rpart(y_train ~ ., data = cbind(X_train_rfe, y_train), method = 'class')
+```
+
+# Summarize the model
+```{r}
+summary(dt_model)
+```
+
+# Plot decision tree
+```{r}
+rpart.plot(dt_model, type = 2, extra = 1)
+```
+
+# Make predictions on test set
+```{r}
+y_pred_dt <- predict(dt_model, X_test, type = "class")
+```
+
+# Generate confusion matrix
+```{r}
+conf_mat <- confusionMatrix(y_pred_dt, y_test)
+conf_mat
+```
+
+# Print confusion matrix
+```{r}
+conf_mat$table
+```
+
+# Calculate accuracy, precision, recall, and f1 score
+```{r}
+accuracy_dt <- conf_mat$overall['Accuracy']
+accuracy_dt
+
+precision_dt <- conf_mat$byClass['Precision']
+precision_dt
+
+recall_dt <- conf_mat$byClass['Recall']
+recall_dt
+
+f1_score_dt <- conf_mat$byClass['F1']
+f1_score_dt
+```
+
+
+
+####################### ANN Keras ############################
+#library(tensorflow)
+#install_tensorflow()
+```{r}
+library(keras)
+library(tensorflow)
+
+```
+
+# convert X_train_rfe and X_test_rfe to matrix
+```{r}
+X_train_rfe_mat <- as.matrix(X_train_rfe)
+X_test_rfe_mat <- as.matrix(X_test_rfe)
+```
+
+# convert y_train and y_test to numerical vectors
+```{r}
+y_train_mat <- as.matrix(y_train)
+y_train_vec <- as.numeric(y_train_mat)
+
+y_test_mat <- as.matrix(y_test)
+y_test_vec <- as.numeric(y_test_mat)
+```
+
+# define the model
+```{r}
+keras_model <- keras_model_sequential() 
+
+keras_model %>% 
+  layer_dense(units = 16, activation = 'relu', input_shape = ncol(X_train_rfe_mat)) %>%
+  layer_dropout(rate = 0.2) %>%  # add dropout layer
+  layer_dense(units = 8, activation = 'relu') %>% 
+  layer_dropout(rate = 0.2) %>%  # add dropout layer
+  layer_dense(units = 1, activation = 'sigmoid')
+```
+
+# compile the model
+```{r}
+keras_model %>% compile(
+  loss = 'binary_crossentropy',
+  optimizer = 'adam',
+  metrics = c('accuracy')
+)
+
+
+```
+
+# train the model
+```{r}
+history <- keras_model %>% fit(
+  x = X_train_rfe_mat,
+  y = y_train_vec,
+  epochs = 10,
+  batch_size = 32,
+  validation_data = list(X_test_rfe_mat, y_test_vec)
+)
+
+```
+
+# model summary
+```{r}
+summary(keras_model)
+```
+
+# confusion matrix, accuracy, precision and recall
+```{r}
+y_pred <- keras_model %>% predict(X_test_rfe_mat)
+y_pred <- ifelse(y_pred > 0.5, 1, 0)
+cm <- confusionMatrix(factor(y_pred), factor(y_test_mat))
+accuracy <- cm$overall["Accuracy"]
+precision <- cm$byClass["Pos Pred Value"]
+recall <- cm$byClass["Sensitivity"]
+f1 <- cm$byClass["F1"]
+cat("Confusion Matrix:\n", cm$table, "\n")
+cat("Accuracy:", accuracy, "\n")
+cat("Precision:", precision, "\n")
+cat("Recall:", recall, "\n")
+cat("F1-score:", f1, "\n")
+```
+
+################### XGB Early Stopping ####################
+
+# Define xgboost parameters
+```{r}
+params <- list(
+  objective = "binary:logistic",
+  eval_metric = "logloss"
+)
+
+library(xgboost)
+```
+
+
+# Prepare the training and validation data
+```{r}
+dtrain <- xgb.DMatrix(as.matrix(X_train_rfe), label = as.numeric(y_train) - 1)
+dval <- xgb.DMatrix(as.matrix(X_test_rfe), label = as.numeric(y_test) - 1)
+```
+
+
+# Train the model with early stopping
+```{r}
+xgb_model <- xgb.train(
+  data = dtrain,
+  params = params,
+  nrounds = 10000,
+  watchlist = list(train = dtrain, val = dval),
+  early_stopping_rounds = 10,
+  verbose = 0
+)
+```
+
+
+# Model summary
+```{r}
+print(xgb_model)
+```
+
+# Make predictions on the test set
+```{r}
+y_pred_xg <- predict(xgb_model, newdata = dval)
+```
+
+# Convert the predicted probabilities to classes
+```{r}
+y_pred_class_xg <- ifelse(y_pred_xg >= 0.50, 1, 0)
+```
+
+# Calculate the confusion matrix
+```{r}
+conf_mat_xg <- table(y_test, y_pred_class_xg)
+conf_mat_xg
+```
+
+# Calculate the accuracy
+```{r}
+accuracy_xg <- sum(diag(conf_mat_xg))/sum(conf_mat_xg)
+accuracy_xg
+```
+
+# Calculate the precision
+```{r}
+precision_xg <- conf_mat_xg[2,2]/sum(conf_mat_xg[,2])
+precision_xg
+```
+
+# Calculate the recall
+```{r}
+recall_xg <- conf_mat_xg[2,2]/sum(conf_mat_xg[2,])
+recall_xg
+```
+
+# Calculate the f1 score
+```{r}
+f1_score_xg <- 2 * precision_xg * recall_xg / (precision_xg + recall_xg)
+f1_score_xg
+```
+
